@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Workspace</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}?v=layout-3">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="topbar-copy">
+                <p class="eyebrow">FastAPI Finance Backend</p>
+                <h1>Finance Workspace</h1>
+                <p>Track tickers, save investment notes, and manage the data your API stores.</p>
+            </div>
+
+            <div class="topbar-actions">
+                <a class="button secondary-button" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+                <button id="refresh-all" class="button primary-button" type="button">Refresh</button>
+            </div>
+        </header>
+
+        <main>
+            <section class="summary-grid" aria-label="Finance workspace summary">
+                <article class="metric-card">
+                    <span class="metric-label">Watchlist</span>
+                    <strong id="watchlist-count">0</strong>
+                    <span class="metric-note">tickers being tracked</span>
+                </article>
+
+                <article class="metric-card">
+                    <span class="metric-label">Finance Notes</span>
+                    <strong id="notes-count">0</strong>
+                    <span class="metric-note">research notes saved</span>
+                </article>
+
+                <article class="metric-card">
+                    <span class="metric-label">Unique Tickers</span>
+                    <strong id="ticker-count">0</strong>
+                    <span class="metric-note">across both sections</span>
+                </article>
+
+                <article class="metric-card status-card">
+                    <span class="metric-label">Backend Status</span>
+                    <strong id="status-word">Loading</strong>
+                    <span id="last-sync" class="metric-note">Waiting for API data</span>
+                </article>
+            </section>
+
+            <section class="control-bar" aria-label="Workspace filters">
+                <label class="search-field">
+                    <span>Search everything</span>
+                    <input id="global-search" type="search" placeholder="Ticker, company, title, or note">
+                </label>
+
+                <label>
+                    <span>Ticker filter</span>
+                    <select id="ticker-filter">
+                        <option value="">All tickers</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span>Sort</span>
+                    <select id="sort-mode">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="ticker">Ticker A-Z</option>
+                    </select>
+                </label>
+
+                <button id="clear-filters" class="button subtle-button" type="button">Clear</button>
+            </section>
+
+            <section class="entry-grid" aria-label="Create and edit finance records">
+                <form id="watchlist-form" class="panel record-form">
+                    <input id="watchlist-id" type="hidden">
+
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">Watchlist</p>
+                            <h2 id="watchlist-form-title">Add ticker</h2>
+                        </div>
+                        <button id="cancel-watchlist-edit" class="button text-button is-hidden" type="button">Cancel edit</button>
+                    </div>
+
+                    <div class="form-grid">
+                        <label>
+                            <span>Ticker</span>
+                            <input id="watchlist-ticker" name="ticker" type="text" placeholder="AAPL" autocomplete="off" required>
+                        </label>
+
+                        <label>
+                            <span>Company</span>
+                            <input id="watchlist-company" name="company_name" type="text" placeholder="Apple Inc." autocomplete="off">
+                        </label>
+
+                        <label class="full-width">
+                            <span>Why it matters</span>
+                            <textarea id="watchlist-notes" name="notes" rows="4" placeholder="Catalyst, valuation idea, risk, or reminder"></textarea>
+                        </label>
+                    </div>
+
+                    <div class="form-footer">
+                        <p id="watchlist-message" class="message" aria-live="polite"></p>
+                        <button id="watchlist-submit" class="button primary-button" type="submit">Save ticker</button>
+                    </div>
+                </form>
+
+                <form id="finance-note-form" class="panel record-form">
+                    <input id="finance-note-id" type="hidden">
+
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">Notes</p>
+                            <h2 id="finance-note-form-title">Add finance note</h2>
+                        </div>
+                        <button id="cancel-finance-note-edit" class="button text-button is-hidden" type="button">Cancel edit</button>
+                    </div>
+
+                    <div class="form-grid">
+                        <label>
+                            <span>Ticker</span>
+                            <input id="note-ticker" name="ticker" type="text" placeholder="MSFT" autocomplete="off" required>
+                        </label>
+
+                        <label>
+                            <span>Title</span>
+                            <input id="note-title" name="title" type="text" placeholder="Q2 earnings read-through" required>
+                        </label>
+
+                        <label>
+                            <span>Tags</span>
+                            <input id="note-tags" name="tags" type="text" placeholder="earnings, valuation, risk">
+                        </label>
+
+                        <label>
+                            <span>Source URL</span>
+                            <input id="note-source-url" name="source_url" type="url" placeholder="https://example.com/research">
+                        </label>
+
+                        <label class="full-width">
+                            <span>Note</span>
+                            <textarea id="note-content" name="content" rows="4" placeholder="Write the thesis, observation, or question here" required></textarea>
+                        </label>
+                    </div>
+
+                    <div class="form-footer">
+                        <p id="finance-note-message" class="message" aria-live="polite"></p>
+                        <button id="finance-note-submit" class="button primary-button" type="submit">Save note</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="records-grid" aria-label="Saved finance records">
+                <section class="panel records-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">GET /watchlist/</p>
+                            <h2>Watchlist</h2>
+                        </div>
+                        <span id="watchlist-visible-count" class="count-pill">0 shown</span>
+                    </div>
+
+                    <div id="watchlist-list" class="record-list" aria-live="polite"></div>
+                </section>
+
+                <section class="panel records-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">GET /financenotes/</p>
+                            <h2>Finance Notes</h2>
+                        </div>
+                        <span id="notes-visible-count" class="count-pill">0 shown</span>
+                    </div>
+
+                    <div id="finance-notes-list" class="record-list" aria-live="polite"></div>
+                </section>
+            </section>
+
+            <section class="panel api-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">How this page is wired</p>
+                        <h2>Template, static files, and API routes</h2>
+                    </div>
+                </div>
+
+                <div class="api-flow">
+                    <div>
+                        <strong>1. Browser opens <code>/</code></strong>
+                        <span>FastAPI returns <code>templates/home.html</code>.</span>
+                    </div>
+                    <div>
+                        <strong>2. Page loads assets</strong>
+                        <span>CSS and JavaScript come from <code>/static/css/styles.css</code> and <code>/static/js/app.js</code>.</span>
+                    </div>
+                    <div>
+                        <strong>3. JavaScript calls the CRUD API</strong>
+                        <span>It reads, creates, edits, and deletes records through <code>/watchlist/</code> and <code>/financenotes/</code>.</span>
+                    </div>
+                    <div>
+                        <strong>4. Agents can ingest notes</strong>
+                        <span>External tools can POST ticker research to <code>/ingest/finance-notes</code>.</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="detail-dialog" class="detail-dialog">
+        <div class="dialog-header">
+            <div>
+                <p id="dialog-eyebrow" class="eyebrow">Record</p>
+                <h2 id="dialog-title">Details</h2>
+            </div>
+            <form method="dialog">
+                <button class="button subtle-button" type="submit">Close</button>
+            </form>
+        </div>
+        <div id="dialog-body" class="dialog-body"></div>
+    </dialog>
+
+    <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+</body>
+</html>
